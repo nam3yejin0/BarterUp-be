@@ -1,4 +1,4 @@
-// src/main.rs - FIXED VERSION with proper routing
+// src/main.rs - FIXED VERSION for Railway deployment
 mod dtos;
 mod services;
 mod handlers;
@@ -83,6 +83,12 @@ async fn main() -> std::io::Result<()> {
     let allowed_origins = env::var("ALLOWED_ORIGINS")
         .unwrap_or_else(|_| "http://localhost:3000,http://127.0.0.1:3000".into());
 
+    // Get port from environment (Railway sets this)
+    let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let bind_address = format!("0.0.0.0:{}", port);
+    
+    info!("Starting server on {}", bind_address);
+
     HttpServer::new(move || {
         let mut cors = Cors::default()
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
@@ -118,14 +124,14 @@ async fn main() -> std::io::Result<()> {
             .service(skip_profile_picture)
             .service(serve_profile_picture)
             .service(get_current_profile)
-            // Posts routes - FIXED: Move outside of scope and add /api prefix
+            // Posts routes
             .service(
                 web::scope("/api")
                     .service(create_post)  // This becomes /api/posts
                     .service(list_posts)   // This becomes /api/posts
             )
     })
-    .bind(("127.0.0.1", 8080, "0.0.0.0:8080"))?
+    .bind(&bind_address)?  // FIXED: Proper binding to 0.0.0.0 with dynamic port
     .run()
     .await
 }
