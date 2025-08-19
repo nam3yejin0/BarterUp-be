@@ -89,55 +89,49 @@ async fn main() -> std::io::Result<()> {
     
     info!("Starting server on {}", bind_address);
 
-    // src/main.rs - FIXED ROUTE REGISTRATION
-// ... (other imports and setup code remains same)
+        HttpServer::new(move || {
+            let mut cors = Cors::default()
+                .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+                .allowed_headers(vec![
+                    "authorization", 
+                    "content-type", 
+                    "accept",
+                    "x-requested-with"
+                ])
+                .supports_credentials()
+                .max_age(3600);
 
-HttpServer::new(move || {
-    let mut cors = Cors::default()
-        .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-        .allowed_headers(vec![
-            "authorization", 
-            "content-type", 
-            "accept",
-            "x-requested-with"
-        ])
-        .supports_credentials()
-        .max_age(3600);
+            for origin in allowed_origins.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+                cors = cors.allowed_origin(origin);
+            }
 
-    for origin in allowed_origins.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()) {
-        cors = cors.allowed_origin(origin);
-    }
-
-    App::new()
-        .wrap(cors)
-        .wrap(Logger::default())
-        .app_data(state.clone())
-        .app_data(auth_data.clone())
-        // FIXED: All routes properly registered
-        .service(
-            web::scope("/auth")
-                .service(signup)            // POST /auth/signup
-                .service(complete_profile) // POST /auth/complete-profile  
-                .service(login)            // POST /auth/login
-        )
-        .service(
-            web::scope("/api")
-                .service(get_skills)       // GET /api/skills
-                .service(get_user_profile) // GET /api/profile
-                .service(update_user_profile) // PUT /api/profile
-                .service(get_current_profile) // GET /api/profile (duplicate?)
-                .service(create_post)      // POST /api/posts
-                .service(list_posts)       // GET /api/posts
-        )
-        .service(
-            web::scope("/api/profile-picture")
-                .service(upload_profile_picture) // POST /api/profile-picture/upload
-                .service(skip_profile_picture)   // POST /api/profile-picture/skip
-                .service(serve_profile_picture)  // GET /api/profile-picture/{user_id}
-        )
-        .service(test_supabase) // GET /test/supabase
-})
-.bind(&bind_address)?
-.run()
-.await
+            App::new()
+                .wrap(cors)
+                .wrap(Logger::default())
+                .app_data(state.clone())
+                .app_data(auth_data.clone())
+                // Auth routes (no /api prefix)
+                .service(signup)
+                .service(complete_profile)
+                .service(login)
+                .service(get_skills)
+                .service(test_supabase)
+                // Profile management routes
+                .service(get_user_profile)      // GET /api/profile
+                .service(update_user_profile)   // PUT /api/profile
+                // Profile routes
+                .service(upload_profile_picture)
+                .service(skip_profile_picture)
+                .service(serve_profile_picture)
+                .service(get_current_profile)
+                // Posts routes
+                .service(
+                    web::scope("/api")
+                        .service(create_post)  // This becomes /api/posts
+                        .service(list_posts)   // This becomes /api/posts
+                )
+        })
+        .bind(&bind_address)?  // FIXED: Proper binding to 0.0.0.0 with dynamic port
+        .run()
+        .await
 }
