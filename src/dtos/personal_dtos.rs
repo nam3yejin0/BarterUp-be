@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// DTO yang dikirim frontend (FE menyimpan dateOfBirth sebagai "DD/MM/YYYY")
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CreatePersonalDTO {
     /// dari FE: "DD/MM/YYYY"
     pub date_of_birth: String,

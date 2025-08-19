@@ -13,6 +13,7 @@ use deadpool_postgres::Pool;
 use actix_cors::Cors;
 use reqwest::Client;
 use log::{info, error};
+use crate::handlers::profile_handlers::{get_user_profile, update_user_profile};
 
 use crate::handlers::auth_handlers::{
     signup, 
@@ -109,6 +110,9 @@ async fn main() -> std::io::Result<()> {
             .service(login)
             .service(get_skills)
             .service(test_supabase)
+            // Profile management routes
+            .service(get_user_profile)      // GET /api/profile
+            .service(update_user_profile)   // PUT /api/profile
             // Profile routes
             .service(upload_profile_picture)
             .service(skip_profile_picture)
